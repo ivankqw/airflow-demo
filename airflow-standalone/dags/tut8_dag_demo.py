@@ -35,6 +35,7 @@ def transform_order_data(ti):
 
 with DAG('ecommerce_etl', default_args=default_args, schedule_interval='@daily', dagrun_timeout=timedelta(minutes=60)) as dag:
 
+    # the SQLExecuteQueryOperator is an operator that wraps the PostgresHook
     t0 = SQLExecuteQueryOperator(
         task_id='create_table',
         conn_id='postgres_t8_nopwd',
