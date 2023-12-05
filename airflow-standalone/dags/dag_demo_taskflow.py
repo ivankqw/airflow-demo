@@ -12,7 +12,15 @@ default_args = {
     "retry_delay": timedelta(minutes=10)
 }
 
-@dag(dag_id='ecommerce_etl_taskflow', default_args=default_args, schedule_interval='@daily', dagrun_timeout=timedelta(minutes=60), catchup=False)
+mock_order_data = {
+    'order_id': 0,
+    'customer_id': 123,
+    'amount': 100.0,
+    'status': 'completed'
+}
+
+
+@dag(dag_id='ecommerce_etl_taskflow', default_args=default_args, schedule_interval='@daily', catchup=False)
 def tutorial_taskflow_api_etl():
     @task
     def create_table():
@@ -25,23 +33,18 @@ def tutorial_taskflow_api_etl():
         );
         """
         # Use the Airflow PostgresHook to execute the SQL
-        from airflow.providers.postgres.hooks.postgres import PostgresHook
         hook = PostgresHook(postgres_conn_id='postgres_t8_nopwd')
         hook.run(create_table_sql, autocommit=True)
 
     @task
     def extract():
         # by default, any operator that return a value will push it to xcom
-        return {
-            'order_id': 4,
-            'customer_id': 123,
-            'amount': 100.0,
-            'status': 'completed'
-        }
+        return mock_order_data
 
     @task
     def transform(order_data_dict: dict):
-        order_data_dict['amount'] = order_data_dict['amount'] * 1.1  # Apply a tax
+        order_data_dict['amount'] = order_data_dict['amount'] * \
+            1.1  # Apply a tax
         return order_data_dict
 
     @task
@@ -59,5 +62,6 @@ def tutorial_taskflow_api_etl():
     order_data = extract()
     transformed_data = transform(order_data)
     load(transformed_data)
+
 
 tutorial_etl_dag = tutorial_taskflow_api_etl()
